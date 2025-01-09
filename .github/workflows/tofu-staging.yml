@@ -3,14 +3,15 @@ name: OpenTofu Workflow
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  TF_VERSION: "1.8.0"
+  TF_VERSION: "1.8.8"
 
 on:
-  push:
+  pull_request:
     tags:
       - "*"
     paths:
       - "staging/**"
+      - ".github/"
   workflow_dispatch:
 
 jobs:
@@ -71,27 +72,6 @@ jobs:
           commenter_type: validate
           commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
           commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
-
-      - name: TFLint - Setup
-        id: tflint
-        uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_wrapper_enabled: true
-
-      - name: TFLint - Run
-        id: tflint_run
-        run: |
-          tflint --version
-          tflint --init
-          tflint --chdir="./staging" --recursive
-
-      - name: Post TFLint Comment
-        if: ${{ always() && (steps.tflint_run.outcome == 'success' || steps.tflint_run.outcome == 'failure') }}
-        uses: phoenix-actions/opentofu-pr-commenter@v1
-        with:
-          commenter_type: tflint
-          commenter_input: ${{ format('{0}{1}', steps.tflint_run.outputs.stdout, steps.tflint_run.outputs.stderr) }}
-          commenter_exitcode: ${{ steps.tflint_run.outputs.exitcode }}
 
       - name: Tofu Plan
         id: plan

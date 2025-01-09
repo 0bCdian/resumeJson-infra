@@ -73,7 +73,7 @@ jobs:
 
       - name: Tofu Plan
         id: plan
-        environment:
+        env:
           TF_VAR_project_id: ${{vars.PROJECT_ID}}
           TF_VAR_region: ${{vars.REGION}}
         run: tofu -chdir="./staging" plan -lock=false -input=false |& tee tf_plan.txt

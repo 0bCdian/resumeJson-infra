@@ -47,6 +47,18 @@ jobs:
           additional-denied-words: ""
           timeout-minutes: 60
 
+      - name: Tofu Init
+        id: init
+        run: tofu -chdir="./staging" init -lock=false -input=false
+
+      - name: Post Init Comment
+        if: ${{ always() && (steps.init.outcome == 'success' || steps.init.outcome == 'failure') }}
+        uses: phoenix-actions/opentofu-pr-commenter@v1
+        with:
+          commenter_type: init
+          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.init.outputs.exitcode }}
+
       - name: Tofu Apply Staging
         id: apply
         env:

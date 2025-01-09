@@ -24,7 +24,7 @@ module "firestore" {
 
 module "cloud-storage" {
   source      = "../modules/cloud-storage"
-  bucket_name = "error-reports"
+  bucket_name = "error-reports-resume-staging"
   region_name = var.region
 }
 

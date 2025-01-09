@@ -1,0 +1,43 @@
+name: OpenTofu Staging Apply Workflow
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  TF_VERSION: "1.8.8"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "staging/**"
+  workflow_dispatch:
+
+jobs:
+  tofu:
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Manual Approval Apply
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: "0bCdian"
+          minimum-approvals: 1
+          issue-title: "Tofu apply staging approval"
+          issue-body: "Please approve or deny applying the plan"
+          exclude-workflow-initiator-as-approver: false
+          additional-approved-words: ""
+          additional-denied-words: ""
+          timeout-minutes: 60
+
+      - name: Tofu Apply Staging
+        id: apply
+        env:
+          TF_VAR_project_id: ${{vars.PROJECT_ID}}
+          TF_VAR_region: ${{vars.REGION}}
+        if: ${{ success() }}
+        run: tofu -chdir="./staging" apply -auto-approve -input=false

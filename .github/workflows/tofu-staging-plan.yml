@@ -1,4 +1,4 @@
-name: OpenTofu Workflow
+name: OpenTofu Staging Plan Workflow
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -9,7 +9,7 @@ on:
   pull_request:
     paths:
       - "staging/**"
-      - ".github/**"
+      - ".github/tofu-staging-plan.yml"
   workflow_dispatch:
 
 jobs:

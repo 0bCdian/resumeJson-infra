@@ -27,6 +27,14 @@ module "cloud-storage" {
   bucket_name = "error-reports"
   region_name = var.region
 }
+
+module "artifact-registry" {
+  source        = "../modules/artifact-registry"
+  repository-id = "resumejson-staging"
+  region        = var.region
+  description   = "main docker registry for apps in the resumejson staging project"
+}
+
 // I forgot I had a module for this the first time 
 resource "google_storage_bucket" "state" {
   name          = "resumejson-staging-opentofu"

@@ -89,7 +89,7 @@ jobs:
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: ${{ secrets.APPROVERS }}
+          approvers: "0bCdian"
           minimum-approvals: 1
           issue-title: "Tofu apply approval"
           issue-body: "Please approve or deny applying the plan"

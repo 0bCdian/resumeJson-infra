@@ -7,11 +7,9 @@ env:
 
 on:
   pull_request:
-    tags:
-      - "*"
     paths:
       - "staging/**"
-      - ".github/"
+      - ".github/**"
   workflow_dispatch:
 
 jobs:

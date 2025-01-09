@@ -1,4 +1,4 @@
-name: OpenTofu Workflow
+name: OpenTofu Staging Plan Workflow
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -7,11 +7,9 @@ env:
 
 on:
   pull_request:
-    tags:
-      - "*"
     paths:
       - "staging/**"
-      - ".github/"
+      - ".github/tofu-staging-plan.yml"
   workflow_dispatch:
 
 jobs:
@@ -19,6 +17,9 @@ jobs:
     name: Run OpenTofu and Comment
     runs-on: ubuntu-latest
     environment: staging
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,6 +76,9 @@ jobs:
 
       - name: Tofu Plan
         id: plan
+        env:
+          TF_VAR_project_id: ${{vars.PROJECT_ID}}
+          TF_VAR_region: ${{vars.REGION}}
         run: tofu -chdir="./staging" plan -lock=false -input=false |& tee tf_plan.txt
 
       - name: Post Plan Comment
@@ -87,20 +91,23 @@ jobs:
           commenter_plan_path: tf_plan.txt
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 
-      - name: Manual Approval
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: ${{ secrets.APPROVERS }}
-          minimum-approvals: 1
-          issue-title: "Tofu apply approval"
-          issue-body: "Please approve or deny applying the plan"
-          exclude-workflow-initiator-as-approver: false
-          additional-approved-words: ""
-          additional-denied-words: ""
-          timeout-minutes: 60
-
-      - name: Tofu Apply
-        id: apply
-        if: ${{ success() }}
-        run: tofu -chdir="./staging" apply -auto-approve -input=false
+      # - name: Manual Approval
+      #   uses: trstringer/manual-approval@v1
+      #   with:
+      #     secret: ${{ secrets.GITHUB_TOKEN }}
+      #     approvers: "0bCdian"
+      #     minimum-approvals: 1
+      #     issue-title: "Tofu apply approval"
+      #     issue-body: "Please approve or deny applying the plan"
+      #     exclude-workflow-initiator-as-approver: false
+      #     additional-approved-words: ""
+      #     additional-denied-words: ""
+      #     timeout-minutes: 60
+      #
+      # - name: Tofu Apply
+      #   id: apply
+      #   env:
+      #     TF_VAR_project_id: ${{vars.PROJECT_ID}}
+      #     TF_VAR_region: ${{vars.REGION}}
+      #   if: ${{ success() }}
+      #   run: tofu -chdir="./staging" apply -auto-approve -input=false

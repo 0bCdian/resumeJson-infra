@@ -1,0 +1,10 @@
+[
+	"run.googleapis.com",
+	"artifactregistry.googleapis.com",
+	"iam.googleapis.com",
+	"firestore.googleapis.com",
+	"storage.googleapis.com",
+	"firebase.googleapis.com",
+	"iap.googleapis.com",
+	"secretmanager.googleapis.com"
+]

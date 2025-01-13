@@ -1,0 +1,112 @@
+name: OpenTofu Plan Workflow
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TF_VERSION: "1.8.8"
+
+on:
+  pull_request:
+    paths:
+      - "production/**"
+      - ".github/tofu-plan.yml"
+  workflow_dispatch:
+
+jobs:
+  tofu:
+    name: Run OpenTofu and Comment
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+          tofu_wrapper: true
+
+      - name: Tofu Format
+        id: fmt
+        run: |
+          tofu fmt -check -recursive -diff ./production
+        continue-on-error: true
+
+      - name: Post Format Comment
+        if: ${{ always() && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure') }}
+        uses: phoenix-actions/opentofu-pr-commenter@v1
+        with:
+          commenter_type: fmt
+          commenter_input: ${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
+
+      - name: Tofu Init
+        id: init
+        run: tofu -chdir="./production" init -lock=false -input=false
+
+      - name: Post Init Comment
+        if: ${{ always() && (steps.init.outcome == 'success' || steps.init.outcome == 'failure') }}
+        uses: phoenix-actions/opentofu-pr-commenter@v1
+        with:
+          commenter_type: init
+          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.init.outputs.exitcode }}
+
+      - name: Tofu Validate
+        id: validate
+        run: tofu -chdir="./production" validate
+
+      - name: Post TF Validate Comment
+        if: ${{ always() && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure') }}
+        uses: phoenix-actions/opentofu-pr-commenter@v1
+        with:
+          commenter_type: validate
+          commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
+
+      - name: Tofu Plan
+        id: plan
+        env:
+          TF_VAR_project_id: ${{vars.PROJECT_ID}}
+          TF_VAR_region: ${{vars.REGION}}
+        run: tofu -chdir="./staging" plan -lock=false -input=false |& tee tf_plan.txt
+
+      - name: Post Plan Comment
+        uses: phoenix-actions/opentofu-pr-commenter@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ inputs.tofu_workspace }}
+        with:
+          commenter_type: plan
+          commenter_plan_path: tf_plan.txt
+          commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+
+      # - name: Manual Approval
+      #   uses: trstringer/manual-approval@v1
+      #   with:
+      #     secret: ${{ secrets.GITHUB_TOKEN }}
+      #     approvers: "0bCdian"
+      #     minimum-approvals: 1
+      #     issue-title: "Tofu apply approval"
+      #     issue-body: "Please approve or deny applying the plan"
+      #     exclude-workflow-initiator-as-approver: false
+      #     additional-approved-words: ""
+      #     additional-denied-words: ""
+      #     timeout-minutes: 60
+      #
+      # - name: Tofu Apply
+      #   id: apply
+      #   env:
+      #     TF_VAR_project_id: ${{vars.PROJECT_ID}}
+      #     TF_VAR_region: ${{vars.REGION}}
+      #   if: ${{ success() }}
+      #   run: tofu -chdir="./staging" apply -auto-approve -input=false

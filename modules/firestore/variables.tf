@@ -7,3 +7,9 @@ variable "db_name" {
   description = "Name for the firestore instance, default is (default)"
   default     = "(default)"
 }
+
+variable "location_id" {
+  type        = string
+  description = "Location of the region for the firstore instance"
+  default     = "nam5"
+}
